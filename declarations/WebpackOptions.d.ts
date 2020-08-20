@@ -328,6 +328,10 @@ export type AssetModuleFilename =
 			assetInfo?: import("../lib/Compilation").AssetInfo
 	  ) => string);
 /**
+ * Add charset attribute for script tag.
+ */
+export type Charset = boolean;
+/**
  * The callback function name used by webpack for loading of chunks in WebWorkers.
  */
 export type ChunkCallbackName = string;
@@ -1324,6 +1328,10 @@ export interface Optimization {
 	 */
 	providedExports?: boolean;
 	/**
+	 * Use real [contenthash] based on final content of the assets.
+	 */
+	realContentHash?: boolean;
+	/**
 	 * Removes modules from chunks when these modules are already included in all parents.
 	 */
 	removeAvailableModules?: boolean;
@@ -1573,6 +1581,10 @@ export interface Output {
 	 * Add a comment in the UMD wrapper.
 	 */
 	auxiliaryComment?: AuxiliaryComment;
+	/**
+	 * Add charset attribute for script tag.
+	 */
+	charset?: Charset;
 	/**
 	 * The callback function name used by webpack for loading of chunks in WebWorkers.
 	 */
@@ -2042,6 +2054,10 @@ export interface OutputNormalized {
 	 * The filename of asset modules as relative path inside the `output.path` directory.
 	 */
 	assetModuleFilename?: AssetModuleFilename;
+	/**
+	 * Add charset attribute for script tag.
+	 */
+	charset?: Charset;
 	/**
 	 * The callback function name used by webpack for loading of chunks in WebWorkers.
 	 */

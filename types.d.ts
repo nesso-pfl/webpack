@@ -215,6 +215,26 @@ declare interface AssetInfo {
 	immutable?: boolean;
 
 	/**
+	 * the value(s) of the full hash used for this asset
+	 */
+	fullhash?: LibraryExport;
+
+	/**
+	 * the value(s) of the chunk hash used for this asset
+	 */
+	chunkhash?: LibraryExport;
+
+	/**
+	 * the value(s) of the module hash used for this asset
+	 */
+	modulehash?: LibraryExport;
+
+	/**
+	 * the value(s) of the content hash used for this asset
+	 */
+	contenthash?: LibraryExport;
+
+	/**
 	 * size in bytes, only set after asset has been emitted
 	 */
 	size?: number;
@@ -485,6 +505,7 @@ declare abstract class CacheFacade {
 	getChildCache(name: string): CacheFacade;
 	getItemCache(identifier: string, etag: Etag): ItemCacheFacade;
 	getLazyHashedEtag(obj: HashableObject): Etag;
+	mergeEtags(a: Etag, b: Etag): Etag;
 	get<T>(identifier: string, etag: Etag, callback: CallbackCache<T>): void;
 	getPromise<T>(identifier: string, etag: Etag): Promise<T>;
 	store<T>(
@@ -494,6 +515,17 @@ declare abstract class CacheFacade {
 		callback: CallbackCache<void>
 	): void;
 	storePromise<T>(identifier: string, etag: Etag, data: T): Promise<void>;
+	provide<T>(
+		identifier: string,
+		etag: Etag,
+		computer: (arg0: CallbackNormalErrorCache<T>) => void,
+		callback: CallbackNormalErrorCache<T>
+	): void;
+	providePromise<T>(
+		identifier: string,
+		etag: Etag,
+		computer: () => T | Promise<T>
+	): Promise<T>;
 }
 declare interface CacheGroupSource {
 	key?: string;
@@ -521,12 +553,20 @@ declare interface CacheGroupsContext {
 }
 type CacheOptions = boolean | MemoryCacheOptions | FileCacheOptions;
 type CacheOptionsNormalized = false | MemoryCacheOptions | FileCacheOptions;
+declare class CachedSource extends Source {
+	constructor(source: Source, cachedData?: any);
+	original(): Source;
+	getCachedData(): any;
+}
 type CallExpression = SimpleCallExpression | NewExpression;
 declare interface CallbackCache<T> {
 	(err?: WebpackError, result?: T): void;
 }
 declare interface CallbackFunction<T> {
 	(err?: Error, result?: T): any;
+}
+declare interface CallbackNormalErrorCache<T> {
+	(err?: Error, result?: T): void;
 }
 declare interface CallbackWebpack<T> {
 	(err?: Error, stats?: T): void;
@@ -895,6 +935,10 @@ declare interface ChunkPathData {
 	contentHash?: Record<string, string>;
 	contentHashWithLength?: Record<string, (length: number) => string>;
 }
+declare class ChunkPrefetchPreloadPlugin {
+	constructor();
+	apply(compiler: Compiler): void;
+}
 declare interface ChunkSizeOptions {
 	/**
 	 * constant overhead for a chunk
@@ -984,6 +1028,10 @@ declare abstract class CodeGenerationResults {
 		runtime: string | SortableSet<string>,
 		result: CodeGenerationResult
 	): void;
+}
+declare class CompatSource extends Source {
+	constructor(sourceLike: SourceLike);
+	static from(sourceLike: SourceLike): Source;
 }
 declare class Compilation {
 	/**
@@ -1319,6 +1367,7 @@ declare class Compilation {
 		newSourceOrFunction: Source | ((arg0: Source) => Source),
 		assetInfoUpdateOrFunction?: AssetInfo | ((arg0: AssetInfo) => AssetInfo)
 	): void;
+	renameAsset(file?: any, newFile?: any): void;
 	deleteAsset(file: string): void;
 	getAssets(): Readonly<Asset>[];
 	getAsset(name: string): Readonly<Asset>;
@@ -1414,6 +1463,11 @@ declare class Compilation {
 	 * Optimize the transfer of existing assets, e. g. by preparing a compressed (gzip) file as separate asset.
 	 */
 	static PROCESS_ASSETS_STAGE_OPTIMIZE_TRANSFER: number;
+
+	/**
+	 * Optimize the hashes of the assets, e. g. by generating real hashes of the asset content.
+	 */
+	static PROCESS_ASSETS_STAGE_OPTIMIZE_HASH: number;
 
 	/**
 	 * Analyse existing assets.
@@ -1535,6 +1589,12 @@ declare class Compiler {
 	};
 	compile(callback: CallbackFunction<Compilation>): void;
 	close(callback: CallbackFunction<void>): void;
+}
+declare class ConcatSource extends Source {
+	constructor(...args: (string | Source)[]);
+	getChildren(): Source[];
+	add(item: string | Source): void;
+	addAllSkipOptimizing(items: Source[]): void;
 }
 
 /**
@@ -2297,6 +2357,14 @@ declare interface Effect {
 	type: string;
 	value: any;
 }
+declare class ElectronTargetPlugin {
+	constructor(main: boolean);
+
+	/**
+	 * Apply the plugin
+	 */
+	apply(compiler: Compiler): void;
+}
 declare class EnableLibraryPlugin {
 	constructor(type: LibraryType);
 	type: LibraryType;
@@ -2853,6 +2921,14 @@ declare interface FallbackCacheGroup {
 	maxInitialSize: Record<string, number>;
 	automaticNameDelimiter: string;
 }
+declare class FetchCompileAsyncWasmPlugin {
+	constructor();
+
+	/**
+	 * Apply the plugin
+	 */
+	apply(compiler: Compiler): void;
+}
 declare class FetchCompileWasmPlugin {
 	constructor(options?: any);
 	options: any;
@@ -3135,6 +3211,7 @@ declare interface HashedModuleIdsPluginOptions {
 	 */
 	hashFunction?: string;
 }
+declare abstract class HelperRuntimeModule extends RuntimeModule {}
 declare class HotModuleReplacementPlugin {
 	constructor(options?: any);
 	options: any;
@@ -3267,6 +3344,11 @@ declare abstract class ItemCacheFacade {
 	getPromise<T>(): Promise<T>;
 	store<T>(data: T, callback: CallbackCache<void>): void;
 	storePromise<T>(data: T): Promise<void>;
+	provide<T>(
+		computer: (arg0: CallbackNormalErrorCache<T>) => void,
+		callback: CallbackNormalErrorCache<T>
+	): void;
+	providePromise<T>(computer: () => T | Promise<T>): Promise<T>;
 }
 declare class JavascriptModulesPlugin {
 	constructor(options?: {});
@@ -3478,7 +3560,7 @@ declare abstract class JavascriptParser extends Parser {
 		topLevelAwait: SyncBailHook<[Expression], boolean | void>;
 		call: HookMap<SyncBailHook<[Expression], boolean | void>>;
 		callMemberChain: HookMap<
-			SyncBailHook<[Expression, string[]], boolean | void>
+			SyncBailHook<[CallExpression, string[]], boolean | void>
 		>;
 		memberChainOfCallMemberChain: HookMap<
 			SyncBailHook<
@@ -3513,9 +3595,56 @@ declare abstract class JavascriptParser extends Parser {
 	state: Record<string, any> & ParserStateBase;
 	comments: any;
 	semicolons: any;
-	statementEndPos: any;
-	lastStatementEndPos: any;
-	statementStartPos: any;
+	statementPath: (
+		| UnaryExpression
+		| ThisExpression
+		| ArrayExpression
+		| ObjectExpression
+		| FunctionExpression
+		| ArrowFunctionExpression
+		| YieldExpression
+		| SimpleLiteral
+		| RegExpLiteral
+		| UpdateExpression
+		| BinaryExpression
+		| AssignmentExpression
+		| LogicalExpression
+		| MemberExpression
+		| ConditionalExpression
+		| SimpleCallExpression
+		| NewExpression
+		| SequenceExpression
+		| TemplateLiteral
+		| TaggedTemplateExpression
+		| ClassExpression
+		| MetaProperty
+		| Identifier
+		| AwaitExpression
+		| ImportExpression
+		| ChainExpression
+		| ExpressionStatement
+		| BlockStatement
+		| EmptyStatement
+		| DebuggerStatement
+		| WithStatement
+		| ReturnStatement
+		| LabeledStatement
+		| BreakStatement
+		| ContinueStatement
+		| IfStatement
+		| SwitchStatement
+		| ThrowStatement
+		| TryStatement
+		| WhileStatement
+		| DoWhileStatement
+		| ForStatement
+		| ForInStatement
+		| ForOfStatement
+		| FunctionDeclaration
+		| VariableDeclaration
+		| ClassDeclaration
+	)[];
+	prevStatement: any;
 	currentTagData: any;
 	initializeEvaluating(): void;
 	getRenameIdentifier(expr?: any): string;
@@ -3584,7 +3713,7 @@ declare abstract class JavascriptParser extends Parser {
 	walkObjectExpression(expression?: any): void;
 	walkFunctionExpression(expression?: any): void;
 	walkArrowFunctionExpression(expression?: any): void;
-	walkSequenceExpression(expression?: any): void;
+	walkSequenceExpression(expression: SequenceExpression): void;
 	walkUpdateExpression(expression?: any): void;
 	walkUnaryExpression(expression?: any): void;
 	walkLeftRightExpression(expression?: any): void;
@@ -3664,6 +3793,7 @@ declare abstract class JavascriptParser extends Parser {
 	evaluate(source?: any): BasicEvaluatedExpression;
 	getComments(range?: any): any;
 	isAsiPosition(pos?: any): any;
+	isStatementLevelExpression(expr?: any): boolean;
 	getTagData(name?: any, tag?: any): any;
 	tagVariable(name?: any, tag?: any, data?: any): void;
 	defineVariable(name?: any): void;
@@ -3739,7 +3869,6 @@ declare abstract class JavascriptParser extends Parser {
 	};
 }
 declare interface JsonpCompilationPluginHooks {
-	jsonpScript: SyncWaterfallHook<[string, Chunk, string]>;
 	linkPreload: SyncWaterfallHook<[string, Chunk, string]>;
 	linkPrefetch: SyncWaterfallHook<[string, Chunk, string]>;
 }
@@ -3759,7 +3888,7 @@ declare interface KnownBuildMeta {
 	exportsArgument?: string;
 	strict?: boolean;
 	moduleConcatenationBailout?: string;
-	exportsType?: "namespace" | "default" | "flagged";
+	exportsType?: "namespace" | "dynamic" | "default" | "flagged";
 	defaultObject?: false | "redirect" | "redirect-warn";
 	strictHarmonyModule?: boolean;
 	async?: boolean;
@@ -3943,6 +4072,15 @@ declare interface LimitChunkCountPluginOptions {
 	 */
 	maxChunks: number;
 }
+declare interface LoadScriptCompilationHooks {
+	createScript: SyncWaterfallHook<[string, Chunk]>;
+}
+declare class LoadScriptRuntimeModule extends HelperRuntimeModule {
+	constructor();
+	static getCompilationHooks(
+		compilation: Compilation
+	): LoadScriptCompilationHooks;
+}
 
 /**
  * Custom values available in the loader context.
@@ -4068,7 +4206,7 @@ declare abstract class MainTemplate {
 		localVars: SyncWaterfallHook<[string, Chunk, string]>;
 		requireExtensions: SyncWaterfallHook<[string, Chunk, string]>;
 		requireEnsure: SyncWaterfallHook<[string, Chunk, string, string]>;
-		readonly jsonpScript: SyncWaterfallHook<[string, Chunk, string]>;
+		readonly jsonpScript: SyncWaterfallHook<[string, Chunk]>;
 		readonly linkPrefetch: SyncWaterfallHook<[string, Chunk, string]>;
 		readonly linkPreload: SyncWaterfallHook<[string, Chunk, string]>;
 	}>;
@@ -4176,6 +4314,7 @@ declare class Module extends DependenciesBlock {
 	readonly exportsArgument: string;
 	readonly moduleArgument: string;
 	getExportsType(
+		moduleGraph: ModuleGraph,
 		strict: boolean
 	): "namespace" | "default-only" | "default-with-named" | "dynamic";
 	addPresentationalDependency(presentationalDependency: Dependency): void;
@@ -4800,6 +4939,22 @@ declare interface NodeOptions {
 	 */
 	global?: boolean;
 }
+declare class NodeSourcePlugin {
+	constructor(options: NodeWebpackOptions);
+
+	/**
+	 * Apply the plugin
+	 */
+	apply(compiler: Compiler): void;
+}
+declare class NodeTargetPlugin {
+	constructor();
+
+	/**
+	 * Apply the plugin
+	 */
+	apply(compiler: Compiler): void;
+}
 declare class NodeTemplatePlugin {
 	constructor(options?: any);
 	asyncChunkLoading: any;
@@ -5107,6 +5262,11 @@ declare interface Optimization {
 	providedExports?: boolean;
 
 	/**
+	 * Use real [contenthash] based on final content of the assets.
+	 */
+	realContentHash?: boolean;
+
+	/**
 	 * Removes modules from chunks when these modules are already included in all parents.
 	 */
 	removeAvailableModules?: boolean;
@@ -5373,6 +5533,10 @@ type OptimizationSplitChunksSizes = number | { [index: string]: number };
 declare abstract class OptionsApply {
 	process(options?: any, compiler?: any): void;
 }
+declare class OriginalSource extends Source {
+	constructor(source: string | Buffer, name: string);
+	getName(): string;
+}
 
 /**
  * Options affecting the output of the compilation. `output` options tell webpack how to write the compiled files to disk.
@@ -5387,6 +5551,11 @@ declare interface Output {
 	 * Add a comment in the UMD wrapper.
 	 */
 	auxiliaryComment?: AuxiliaryComment;
+
+	/**
+	 * Add charset attribute for script tag.
+	 */
+	charset?: boolean;
 
 	/**
 	 * The callback function name used by webpack for loading of chunks in WebWorkers.
@@ -5596,6 +5765,11 @@ declare interface OutputNormalized {
 	 * The filename of asset modules as relative path inside the `output.path` directory.
 	 */
 	assetModuleFilename?: AssetModuleFilename;
+
+	/**
+	 * Add charset attribute for script tag.
+	 */
+	charset?: boolean;
 
 	/**
 	 * The callback function name used by webpack for loading of chunks in WebWorkers.
@@ -5847,6 +6021,11 @@ declare class PrefetchPlugin {
 	 */
 	apply(compiler: Compiler): void;
 }
+declare class PrefixSource extends Source {
+	constructor(prefix: string, source: string | Source);
+	original(): Source;
+	getPrefix(): string;
+}
 declare interface PrintedElement {
 	element: string;
 	content: string;
@@ -6032,6 +6211,10 @@ declare interface RawChunkGroupOptions {
 	preloadOrder?: number;
 	prefetchOrder?: number;
 }
+declare class RawSource extends Source {
+	constructor(source: string | Buffer, convertToString: boolean);
+	isBuffer(): boolean;
+}
 declare class ReadFileCompileWasmPlugin {
 	constructor(options?: any);
 	options: any;
@@ -6204,7 +6387,8 @@ declare interface RenderManifestOptions {
 	moduleGraph: ModuleGraph;
 	chunkGraph: ChunkGraph;
 }
-declare abstract class ReplaceSource extends Source {
+declare class ReplaceSource extends Source {
+	constructor(source: Source, name: string);
 	replace(start: number, end: number, newValue: string, name: string): void;
 	insert(pos: number, newValue: string, name: string): void;
 	getName(): string;
@@ -7655,6 +7839,9 @@ declare class SideEffectsFlagPlugin {
 		cache?: any
 	): any;
 }
+declare class SizeOnlySource extends Source {
+	constructor(size: number);
+}
 declare interface Snapshot {
 	startTime?: number;
 	fileTimestamps?: Map<string, FileSystemInfoEntry>;
@@ -7689,13 +7876,17 @@ declare abstract class SortableSet<T> extends Set<T> {
 	[Symbol.iterator](): IterableIterator<T>;
 	readonly [Symbol.toStringTag]: string;
 }
-declare abstract class Source {
+declare class Source {
+	constructor();
 	size(): number;
 	map(options: MapOptions): Object;
 	sourceAndMap(options: MapOptions): { source: string | Buffer; map: Object };
 	updateHash(hash: Hash): void;
 	source(): string | Buffer;
 	buffer(): Buffer;
+}
+declare interface SourceLike {
+	source(): string | Buffer;
 }
 declare class SourceMapDevToolPlugin {
 	constructor(options?: SourceMapDevToolPluginOptions);
@@ -7781,6 +7972,16 @@ declare interface SourceMapDevToolPluginOptions {
 	 * Include source maps for modules based on their extension (defaults to .js and .css).
 	 */
 	test?: Rules;
+}
+declare class SourceMapSource extends Source {
+	constructor(
+		source: string | Buffer,
+		name: string,
+		sourceMap: string | Object | Buffer,
+		originalSource: string | Buffer,
+		innerSourceMap: string | Object | Buffer
+	);
+	getArgsAsBuffers(): [Buffer, string, Buffer, Buffer, Buffer];
 }
 declare interface SourcePosition {
 	line: number;
@@ -9068,8 +9269,18 @@ declare namespace exports {
 			SplitChunksPlugin
 		};
 	}
+	export namespace runtime {
+		export { LoadScriptRuntimeModule };
+	}
+	export namespace prefetch {
+		export { ChunkPrefetchPreloadPlugin };
+	}
 	export namespace web {
-		export { FetchCompileWasmPlugin, JsonpTemplatePlugin };
+		export {
+			FetchCompileAsyncWasmPlugin,
+			FetchCompileWasmPlugin,
+			JsonpTemplatePlugin
+		};
 	}
 	export namespace webworker {
 		export { WebWorkerTemplatePlugin };
@@ -9077,9 +9288,14 @@ declare namespace exports {
 	export namespace node {
 		export {
 			NodeEnvironmentPlugin,
+			NodeSourcePlugin,
+			NodeTargetPlugin,
 			NodeTemplatePlugin,
 			ReadFileCompileWasmPlugin
 		};
+	}
+	export namespace electron {
+		export { ElectronTargetPlugin };
 	}
 	export namespace wasm {
 		export { AsyncWebAssemblyModulesPlugin };
@@ -9188,6 +9404,20 @@ declare namespace exports {
 			export let createFileSerializer: (fs?: any) => Serializer;
 			export { MEASURE_START_OPERATION, MEASURE_END_OPERATION };
 		}
+	}
+	export namespace sources {
+		export {
+			Source,
+			RawSource,
+			OriginalSource,
+			ReplaceSource,
+			SourceMapSource,
+			ConcatSource,
+			PrefixSource,
+			CachedSource,
+			SizeOnlySource,
+			CompatSource
+		};
 	}
 	export namespace experiments {
 		export namespace schemes {

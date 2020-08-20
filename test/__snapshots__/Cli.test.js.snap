@@ -1381,6 +1381,19 @@ Object {
     "multiple": false,
     "simpleType": "boolean",
   },
+  "optimization-real-content-hash": Object {
+    "configs": Array [
+      Object {
+        "description": "Use real [contenthash] based on final content of the assets.",
+        "multiple": false,
+        "path": "optimization.realContentHash",
+        "type": "boolean",
+      },
+    ],
+    "description": "Use real [contenthash] based on final content of the assets.",
+    "multiple": false,
+    "simpleType": "boolean",
+  },
   "optimization-remove-available-modules": Object {
     "configs": Array [
       Object {
@@ -1780,6 +1793,19 @@ Object {
     "description": "The filename of asset modules as relative path inside the \`output.path\` directory.",
     "multiple": false,
     "simpleType": "string",
+  },
+  "output-charset": Object {
+    "configs": Array [
+      Object {
+        "description": "Add charset attribute for script tag.",
+        "multiple": false,
+        "path": "output.charset",
+        "type": "boolean",
+      },
+    ],
+    "description": "Add charset attribute for script tag.",
+    "multiple": false,
+    "simpleType": "boolean",
   },
   "output-chunk-callback-name": Object {
     "configs": Array [
